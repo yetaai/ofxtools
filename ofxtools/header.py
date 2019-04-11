@@ -245,15 +245,36 @@ def parse_header(source):
         # total of 9 fields required by OFX v1 spec.
         for n in range(8):
             rawheader += source.readline().decode("ascii")
-        header, header_end_index = OFXHeaderV1.parse(rawheader)
-
-        #  Input source stream position has advanced to the beginning of
-        #  the OFX body tag soup, which is where subsequent calls
-        #  to read()/readlines() will pick up.
-        #
-        #  Decode the OFX data body according to the encoding declared
-        #  in the OFX header
-        message = source.read().decode(header.codec)
+        HEADER_OFXHEADER = 'OFXHEADER'
+        HEADER_DATA = 'DATA'
+        HEADER_VERSION = 'VERSION'
+        HEADER_SECURITY = 'SECURITY'
+        HEADER_ENCODING = 'ENCODING'
+        HEADER_CHARSET = 'CHARSET'
+        HEADER_COMPRESSION = 'COMPRESSION'
+        HEADER_OLDFILEUID = 'OLDFILEUID'
+        HEADER_NEWFILEUID = 'NEWFILEUID'
+        headerNames = [HEADER_OFXHEADER, HEADER_DATA, HEADER_VERSION, HEADER_SECURITY, HEADER_ENCODING,
+                       HEADER_CHARSET, HEADER_COMPRESSION, HEADER_OLDFILEUID, HEADER_NEWFILEUID]
+        firstlt = rawheader.find('<')
+        if firstlt > 0:
+            rawheader0 = rawheader[:firstlt] + '\n'
+            rawheader1 = rawheader[firstlt:]
+            for aName in headerNames:
+                encoded = aName
+                rawheader0 = rawheader0.replace(encoded, '\n' + encoded)
+            rawheader = rawheader0 + rawheader1
+            header, header_end_index = OFXHeaderV1.parse(rawheader0)
+            message = rawheader1
+        else:
+            header, header_end_index = OFXHeaderV1.parse(rawheader)
+            #  Input source stream position has advanced to the beginning of
+            #  the OFX body tag soup, which is where subsequent calls
+            #  to read()/readlines() will pick up.
+            #
+            #  Decode the OFX data body according to the encoding declared
+            #  in the OFX header
+            message = source.read().decode(header.codec)
 
     return header, message.strip()
 
