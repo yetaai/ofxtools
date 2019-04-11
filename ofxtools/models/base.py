@@ -26,6 +26,7 @@ from copy import deepcopy
 from ofxtools.Types import Element, DateTime, String, Bool, InstanceCounterMixin
 import ofxtools.models
 from ofxtools.utils import pairwise
+import re
 
 
 class classproperty(property):
@@ -62,6 +63,16 @@ class Aggregate:
                 # If attr is an element (i.e. its class is defined in
                 # ``ofxtools.Types``, not defined below as ``Subaggregate``,
                 # ``List``, etc.) then its value is type-converted here.
+                try:
+                    first10 = value[:10]
+                    i8 = int(first10)
+                    sa = re.split(r'\[', value)
+                    if len(sa) == 2 and sa[1][-1] == ']':
+                        i = sa[0].find('.')
+                        if i < 0:
+                            value = sa[0] + '.000[' + sa[1]
+                except:
+                    pass
                 setattr(self, attr, value)
             except ValueError as e:
                 msg = "Can't set {}.{} to {}: {}".format(
